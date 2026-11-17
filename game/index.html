@@ -1,19 +1,157 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>Solara City — Open World</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    background: #0b1c2c; font-family: "Segoe UI", Verdana, sans-serif; color: #fff; }
+  #scene { position: fixed; inset: 0; display: block; }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+  .hidden { display: none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud { z-index: 5; }
+  .panel { background: rgba(8, 18, 30, 0.55); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px; padding: 8px 12px; backdrop-filter: blur(2px); }
+  #topRight { position: absolute; top: 14px; right: 14px; text-align: right; display: flex;
+    flex-direction: column; gap: 6px; align-items: flex-end; }
+  #money { font-size: 26px; font-weight: 800; color: #7dff9a; text-shadow: 0 2px 4px #000; }
+  #stars { font-size: 26px; letter-spacing: 4px; color: #ffd23e;
+    text-shadow: 0 0 10px rgba(255,210,62,0.7), 0 2px 4px #000; min-height: 30px; }
+  #clock { font-size: 18px; font-weight: 700; color: #ffe9b0; text-shadow: 0 2px 4px #000; }
+  #objective { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    max-width: 560px; text-align: center; font-size: 16px; font-weight: 700; line-height: 1.35; }
+  #objective .tag { color: #ffd23e; font-size: 12px; letter-spacing: 2px; display: block; }
+  #minimapBox { position: absolute; left: 14px; bottom: 14px; border-radius: 12px; overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.35); box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
+  #minimap { display: block; width: 210px; height: 210px; background: #12324a; }
+  #vitals { position: absolute; right: 14px; bottom: 14px; text-align: right; }
+  #healthWrap { width: 220px; height: 18px; background: rgba(0,0,0,0.55); border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.35); overflow: hidden; }
+  #healthBar { height: 100%; width: 100%; background: linear-gradient(90deg, #2ee66b, #a8f04a);
+    transition: width 0.2s; }
+  #healthLabel { font-size: 13px; font-weight: 700; margin-top: 4px; text-shadow: 0 2px 3px #000; }
+  #speedo { font-size: 34px; font-weight: 800; margin-top: 6px; text-shadow: 0 2px 6px #000; }
+  #speedo small { font-size: 14px; font-weight: 600; color: #ffd23e; }
+  #ammo { font-size: 16px; font-weight: 700; margin-top: 2px; color: #ffe9b0; text-shadow: 0 2px 3px #000; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px;
+    transform: translate(-50%, -50%); }
+  #crosshair::before, #crosshair::after { content: ""; position: absolute; background: #fff;
+    box-shadow: 0 0 4px #000; }
+  #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair::after { left: 0; top: 10px; width: 22px; height: 2px; }
+  #toast { position: absolute; left: 50%; bottom: 170px; transform: translateX(-50%);
+    font-size: 19px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; text-align: center; }
+  #feed { position: absolute; left: 240px; bottom: 16px; max-width: 420px; font-size: 14px;
+    font-weight: 600; line-height: 1.5; text-shadow: 0 1px 3px #000; }
+  #feed div { margin-top: 3px; opacity: 0.95; }
+  #hint { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%);
+    font-size: 15px; font-weight: 700; color: #ffe9b0; text-shadow: 0 2px 4px #000; }
+
+  /* ---------- Big map ---------- */
+  #bigmap { position: fixed; inset: 0; z-index: 8; background: rgba(4, 12, 22, 0.82);
+    display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+  #bigmapCanvas { border: 3px solid rgba(255,255,255,0.4); border-radius: 14px; background: #12324a; }
+  #bigmapTitle { position: absolute; top: 26px; width: 100%; text-align: center; font-size: 26px;
+    font-weight: 800; letter-spacing: 4px; text-shadow: 0 2px 8px #000; }
+
+  /* ---------- Menus ---------- */
+  .menu { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center;
+    justify-content: center; flex-direction: column; text-align: center; pointer-events: auto; }
+  #startMenu { background: linear-gradient(180deg, rgba(6,20,36,0.25) 0%, rgba(6,20,36,0.72) 78%); }
+  #title { font-size: 84px; font-weight: 900; letter-spacing: 6px; line-height: 0.95;
+    color: #fff; text-shadow: 0 4px 0 #ff8c1a, 0 10px 34px rgba(0,0,0,0.8); margin: 0; }
+  #subtitle { font-size: 22px; font-weight: 700; letter-spacing: 8px; color: #ffd23e;
+    text-shadow: 0 2px 8px #000; margin: 10px 0 0; }
+  #story { max-width: 620px; font-size: 17px; line-height: 1.55; margin: 22px 0 0;
+    text-shadow: 0 2px 6px #000; background: rgba(0,0,0,0.35); padding: 14px 18px; border-radius: 12px; }
+  #controls { font-size: 14px; line-height: 1.8; color: #dfeefc; margin-top: 18px;
+    text-shadow: 0 1px 4px #000; }
+  #controls b { color: #ffd23e; }
+  .bigbtn { pointer-events: auto; cursor: pointer; margin-top: 26px; font-size: 26px; font-weight: 900;
+    letter-spacing: 3px; color: #1a1200; background: linear-gradient(180deg, #ffe066, #ffb400);
+    border: none; border-radius: 14px; padding: 16px 64px;
+    box-shadow: 0 6px 0 #b97e00, 0 12px 30px rgba(0,0,0,0.6); }
+  .bigbtn:hover { filter: brightness(1.08); }
+  .bigbtn:active { transform: translateY(3px); box-shadow: 0 3px 0 #b97e00, 0 8px 20px rgba(0,0,0,0.6); }
+  .ghostbtn { pointer-events: auto; cursor: pointer; margin-top: 14px; font-size: 16px; font-weight: 700;
+    color: #fff; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 10px; padding: 10px 26px; }
+  #pauseMenu, #endMenu { background: rgba(4, 12, 22, 0.72); }
+  #endTitle { font-size: 72px; font-weight: 900; letter-spacing: 6px; margin: 0;
+    text-shadow: 0 6px 30px rgba(0,0,0,0.9); }
+  #endSub { font-size: 20px; margin-top: 12px; text-shadow: 0 2px 6px #000; }
+  #pauseTitle { font-size: 56px; font-weight: 900; letter-spacing: 8px; margin: 0; }
+  #loading { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center;
+    justify-content: center; background: #0b1c2c; font-size: 20px; font-weight: 700; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
+<canvas id="scene"></canvas>
+
+<div id="hud" class="layer hidden">
+  <div id="objective" class="panel hidden"><span class="tag">MISSION</span><span id="objectiveText"></span></div>
+  <div id="topRight">
+    <div id="money" class="panel">$0</div>
+    <div id="stars"></div>
+    <div id="clock" class="panel">17:30</div>
+  </div>
+  <div id="minimapBox"><canvas id="minimap" width="210" height="210"></canvas></div>
+  <div id="vitals">
+    <div id="speedo" class="hidden">0 <small>km/h</small></div>
+    <div id="ammo">PISTOL 12 / 12</div>
+    <div id="healthWrap"><div id="healthBar"></div></div>
+    <div id="healthLabel">HEALTH 100</div>
+  </div>
+  <div id="crosshair" class="hidden"></div>
+  <div id="toast"></div>
+  <div id="feed"></div>
+  <div id="hint"></div>
+</div>
+
+<div id="bigmap" class="hidden">
+  <div id="bigmapTitle">SOLARA CITY MAP — press M to close</div>
+  <canvas id="bigmapCanvas" width="640" height="640"></canvas>
+</div>
+
+<div id="startMenu" class="menu">
+  <h1 id="title">SOLARA<br>CITY</h1>
+  <div id="subtitle">SUN • SAND • TROUBLE</div>
+  <div id="story">Raka is a courier in Solara City, a sunny coastal town where the palm trees
+    sway and the police never sleep. Deliver packages, outrun the law, pick up friends —
+    and take whatever car you like. The city is yours. Try not to get busted.</div>
+  <div id="controls">
+    <b>WASD</b> move / drive &nbsp;•&nbsp; <b>Mouse</b> look &amp; aim &nbsp;•&nbsp; <b>Click</b> shoot<br>
+    <b>Shift</b> sprint &nbsp;•&nbsp; <b>E</b> steal / enter / exit car &nbsp;•&nbsp; <b>Space</b> handbrake<br>
+    <b>F</b> punch &nbsp;•&nbsp; <b>R</b> reload &nbsp;•&nbsp; <b>P</b> pause &nbsp;•&nbsp; <b>M</b> map &nbsp;•&nbsp; <b>N</b> mute
+  </div>
+  <button id="startBtn" class="bigbtn">▶ START GAME</button>
+  <button id="continueBtn" class="ghostbtn hidden">Continue saved game</button>
+  <div style="margin-top:14px;font-size:13px;color:#cfe3f5;text-shadow:0 1px 4px #000">
+    Click anywhere or press Enter to start • An original game — no real brands, no real city</div>
+</div>
+
+<div id="pauseMenu" class="menu hidden">
+  <h1 id="pauseTitle">PAUSED</h1>
+  <button id="resumeBtn" class="bigbtn">RESUME</button>
+  <button id="restartBtn" class="ghostbtn">Restart from beginning</button>
+  <button id="quitBtn" class="ghostbtn">Save &amp; quit to title</button>
+</div>
+
+<div id="endMenu" class="menu hidden">
+  <h1 id="endTitle">BUSTED</h1>
+  <div id="endSub"></div>
+  <button id="againBtn" class="bigbtn">PLAY AGAIN</button>
+  <button id="titleBtn" class="ghostbtn">Back to title</button>
+</div>
+
+<div id="loading">Loading Solara City…</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js" } }
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

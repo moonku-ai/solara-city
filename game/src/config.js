@@ -1,61 +1,87 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+// Solara City — every tunable number lives here so the rest of the game
+// reads one source of truth instead of scattering magic numbers around.
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
-export const STEP = 1 / 60;
-
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+export const WORLD = {
+  // Roads run on a square grid. ROAD_LINES are the centre lines of the roads.
+  roadSpacing: 60,
+  roadHalf: 6,
+  roadLines: [-180, -120, -60, 0, 60, 120, 180],
+  cityHalf: 215,
+  // South of this z the ground turns to sand, then ocean.
+  beachStartZ: 218,
+  oceanStartZ: 268,
+  oceanEndZ: 460,
+  // Sun position for the golden-hour look (from the south-east, so the
+  // faces the usual cameras see are lit).
+  sunDir: { x: 0.45, y: 0.62, z: 0.5 },
 };
 
-export const LIVES = 3;
-
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
+export const PLAYER_TUNING = {
+  walkSpeed: 6.5,
+  runSpeed: 11,
+  accel: 42,
+  friction: 30,
+  radius: 0.7,
+  maxHealth: 100,
+  turnSpeed: 9,
 };
 
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
+export const CAR_TUNING = {
+  accel: 16,
+  reverseAccel: 10,
+  brake: 34,
+  handbrake: 46,
+  maxSpeed: 34,
+  maxReverse: 12,
+  steerMax: 0.55,
+  steerSpeed: 2.4,
+  drag: 0.55,
+  radius: 2.4,
 };
 
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
+export const TRAFFIC_TUNING = {
+  carCount: 14,
+  pedCount: 26,
+  carSpeedMin: 8,
+  carSpeedMax: 13,
+  pedSpeedMin: 1.1,
+  pedSpeedMax: 2.1,
+};
 
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
+export const POLICE_TUNING = {
+  chaseCarSpeed: 36,
+  footCopSpeed: 7.5,
+  arrestSeconds: 2.2,
+  decayGraceSeconds: 25,
+  decayStepSeconds: 12,
+  spawnDistance: 70,
+};
+
+export const COMBAT_TUNING = {
+  pistolDamage: 34,
+  pistolMag: 12,
+  pistolRange: 90,
+  punchDamage: 25,
+  punchRange: 2.4,
+  reloadSeconds: 1.1,
+};
+
+export const MISSION_REWARDS = [150, 300, 500];
 
 export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
+  sky: 0x8ec9e8,
+  fog: 0xa8c8dd,
+  sun: 0xffe0b3,
+  asphalt: 0x2e3138,
+  sidewalk: 0x9aa0a3,
+  sand: 0xe8d29a,
+  ocean: 0x1e7fa8,
+  oceanDeep: 0x0d5c86,
+  grass: 0x5da24a,
+  buildingColors: [0xe8b48a, 0xd9a0a8, 0xa8c4d4, 0xf2d8a0, 0xc4b49a, 0xb8d4c0, 0xe0a090, 0x9fb4d8],
+  carColors: [0xd23c2e, 0x2e6fd2, 0xe8c832, 0x3aa655, 0xe8e8e8, 0x222226, 0x8a4fd2, 0xe87a2e],
+  policeBody: 0xf2f2f2,
+  policeTrim: 0x1a2a44,
 };
 
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+export const SAVE_KEY = 'solara-city-save-v1';
